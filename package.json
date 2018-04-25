@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "node-process-metrics": "0.1.x",
-    "node-process-metrics-prometheus": "0.0.x",
+    "node-process-metrics-prometheus": "0.1.x",
     "prom-dress": "0.0.x"
   },
   "devDependencies": {
