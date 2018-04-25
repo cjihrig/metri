@@ -11,7 +11,7 @@ const { expect } = Code;
 
 
 describe('Metri', () => {
-  it('reports expected metrics', async () => {
+  it('reports expected metrics as JSON by default', async () => {
     const server = await getServer();
     const res = await server.inject({ method: 'GET', url: '/metrics' });
 
@@ -23,6 +23,18 @@ describe('Metri', () => {
     expect(metrics.loop).to.be.a.number();
     expect(metrics.handles).to.be.a.number();
     expect(metrics.requests).to.be.a.number();
+  });
+
+  it('reports expected metrics as Prometheus exposition when requested', async () => {
+    const server = await getServer();
+    const res = await server.inject({
+      method: 'GET',
+      url: '/metrics',
+      headers: { 'Accept': 'text/plain' }
+    });
+
+    expect(res.statusCode).to.equal(200);
+    expect(res.payload).to.match(/# HELP nodejs_event_loop_delay Delay of the Node\.js event loop/);
   });
 });
 
