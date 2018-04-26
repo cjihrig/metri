@@ -30,3 +30,15 @@ An optional string that defaults to `'/metrics'`. This is the path that serves t
 ### `auth`
 
 The hapi authentication to apply to the metrics route. Defaults to `false` (no authentication).
+
+### `defaultFormat`
+
+The default response type. Valid values are `'json'` and `'exposition'`. Defaults to `'exposition'`.
+
+### `expositionMimeType`
+
+The MIME type used to return exposition data. Defaults to `'text/plain'`.
+
+### `jsonMimeType`
+
+The MIME type used to return JSON data. Defaults to `'application/json'`.

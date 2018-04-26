@@ -11,9 +11,13 @@ const { expect } = Code;
 
 
 describe('Metri', () => {
-  it('reports expected metrics as JSON by default', async () => {
+  it('reports expected metrics as JSON when requested', async () => {
     const server = await getServer();
-    const res = await server.inject({ method: 'GET', url: '/metrics' });
+    const res = await server.inject({
+      method: 'GET',
+      url: '/metrics',
+      headers: { 'Accept': 'application/json' }
+    });
 
     expect(res.statusCode).to.equal(200);
     const metrics = JSON.parse(res.payload);
@@ -36,13 +40,87 @@ describe('Metri', () => {
     expect(res.statusCode).to.equal(200);
     expect(res.payload).to.match(/# HELP nodejs_event_loop_delay Delay of the Node\.js event loop/);
   });
+
+  it('reports expected metrics as Prometheus exposition by default', async () => {
+    const server = await getServer();
+    const res = await server.inject({
+      method: 'GET',
+      url: '/metrics'
+    });
+
+    expect(res.statusCode).to.equal(200);
+    expect(res.payload).to.match(/# HELP nodejs_event_loop_delay Delay of the Node\.js event loop/);
+  });
+
+  it('configures JSON as the default response type', async () => {
+    const server = await getServer({ defaultFormat: 'json' });
+    const res = await server.inject({
+      method: 'GET',
+      url: '/metrics'
+    });
+
+    expect(res.statusCode).to.equal(200);
+    const metrics = JSON.parse(res.payload);
+    expect(metrics.process).to.be.an.object();
+    expect(metrics.system).to.be.an.object();
+    expect(metrics.cpu).to.be.an.array();
+    expect(metrics.loop).to.be.a.number();
+    expect(metrics.handles).to.be.a.number();
+    expect(metrics.requests).to.be.a.number();
+  });
+
+  it('configures the JSON MIME type', async () => {
+    const server = await getServer({ jsonMimeType: 'application/foo' });
+    const res = await server.inject({
+      method: 'GET',
+      url: '/metrics',
+      headers: { 'Accept': 'application/foo' }
+    });
+
+    expect(res.statusCode).to.equal(200);
+    const metrics = JSON.parse(res.payload);
+    expect(metrics.process).to.be.an.object();
+    expect(metrics.system).to.be.an.object();
+    expect(metrics.cpu).to.be.an.array();
+    expect(metrics.loop).to.be.a.number();
+    expect(metrics.handles).to.be.a.number();
+    expect(metrics.requests).to.be.a.number();
+  });
+
+  it('configures the exposition MIME type', async () => {
+    const server = await getServer({
+      defaultFormat: 'json',
+      expositionMimeType: 'application/foo'
+    });
+    const res = await server.inject({
+      method: 'GET',
+      url: '/metrics',
+      headers: { 'Accept': 'application/foo' }
+    });
+
+    expect(res.statusCode).to.equal(200);
+    expect(res.payload).to.match(/# HELP nodejs_event_loop_delay Delay of the Node\.js event loop/);
+  });
+
+  it('throws if the default format is not valid', async () => {
+    let threw = false;
+
+    try {
+      await getServer({ defaultFormat: 'foo' });
+    } catch (err) {
+      threw = true;
+      expect(err).to.be.an.error(Error, 'defaultFormat must be exposition or json');
+    }
+
+    expect(threw).to.be.true();
+  });
 });
 
 
-async function getServer () {
+async function getServer (options) {
   const server = Hapi.server();
 
-  await server.register({ plugin: Metri });
+  await server.register({ plugin: Metri, options });
 
   return server;
 }
