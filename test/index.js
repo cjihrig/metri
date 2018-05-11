@@ -38,7 +38,7 @@ describe('Metri', () => {
     });
 
     expect(res.statusCode).to.equal(200);
-    expect(res.payload).to.match(/# HELP nodejs_event_loop_delay Delay of the Node\.js event loop/);
+    expect(res.payload).to.match(/nodejs_versions{node=".+"} 1/);
   });
 
   it('reports expected metrics as Prometheus exposition by default', async () => {
@@ -49,7 +49,7 @@ describe('Metri', () => {
     });
 
     expect(res.statusCode).to.equal(200);
-    expect(res.payload).to.match(/# HELP nodejs_event_loop_delay Delay of the Node\.js event loop/);
+    expect(res.payload).to.match(/nodejs_versions{node=".+"} 1/);
   });
 
   it('configures JSON as the default response type', async () => {
