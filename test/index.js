@@ -114,6 +114,34 @@ describe('Metri', () => {
 
     expect(threw).to.be.true();
   });
+
+  it('reports response timings in exposition format', async () => {
+    const server = await getServer();
+    let res;
+
+    res = await server.inject({
+      method: 'GET',
+      url: '/foo'
+    });
+    expect(res.payload).to.equal('ok');
+    expect(res.statusCode).to.equal(200);
+
+    res = await server.inject({
+      method: 'GET',
+      url: '/bar'
+    });
+    expect(res.statusCode).to.equal(500);
+
+    res = await server.inject({
+      method: 'GET',
+      url: '/metrics',
+      headers: { 'Accept': 'text/plain' }
+    });
+
+    expect(res.statusCode).to.equal(200);
+    expect(res.payload).to.include('http_request_duration_ms_count{method="get",path="/foo",code="200"} 1');
+    expect(res.payload).to.include('http_request_duration_ms_count{method="get",path="/bar",code="500"} 1');
+  });
 });
 
 
@@ -121,6 +149,23 @@ async function getServer (options) {
   const server = Hapi.server();
 
   await server.register({ plugin: Metri, options });
+
+  server.route([
+    {
+      method: 'GET',
+      path: '/foo',
+      handler (request, h) {
+        return 'ok';
+      }
+    },
+    {
+      method: 'GET',
+      path: '/bar',
+      handler (request, h) {
+        throw new Error('bar');
+      }
+    }
+  ]);
 
   return server;
 }
