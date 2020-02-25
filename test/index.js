@@ -1,13 +1,9 @@
 'use strict';
-const Code = require('code');
-const Hapi = require('hapi');
-const Lab = require('lab');
+const Assert = require('assert');
+const Hapi = require('@hapi/hapi');
+const Lab = require('@hapi/lab');
 const Metri = require('../lib');
-
-// Test shortcuts
-const lab = exports.lab = Lab.script();
-const { describe, it } = lab;
-const { expect } = Code;
+const { describe, it } = exports.lab = Lab.script();
 
 
 describe('Metri', () => {
@@ -19,14 +15,14 @@ describe('Metri', () => {
       headers: { 'Accept': 'application/json' }
     });
 
-    expect(res.statusCode).to.equal(200);
+    Assert.strictEqual(res.statusCode, 200);
     const metrics = JSON.parse(res.payload);
-    expect(metrics.process).to.be.an.object();
-    expect(metrics.system).to.be.an.object();
-    expect(metrics.cpu).to.be.an.array();
-    expect(metrics.loop).to.be.a.number();
-    expect(metrics.handles).to.be.a.number();
-    expect(metrics.requests).to.be.a.number();
+    Assert(metrics.process !== null && typeof metrics.process === 'object');
+    Assert(metrics.system !== null && typeof metrics.system === 'object');
+    Assert(Array.isArray(metrics.cpu));
+    Assert(typeof metrics.loop === 'number');
+    Assert(typeof metrics.handles === 'number');
+    Assert(typeof metrics.requests === 'number');
   });
 
   it('reports expected metrics as Prometheus exposition when requested', async () => {
@@ -37,8 +33,8 @@ describe('Metri', () => {
       headers: { 'Accept': 'text/plain' }
     });
 
-    expect(res.statusCode).to.equal(200);
-    expect(res.payload).to.match(/nodejs_versions{node=".+"} 1/);
+    Assert.strictEqual(res.statusCode, 200);
+    Assert(/nodejs_versions{node=".+"} 1/.test(res.payload));
   });
 
   it('reports expected metrics as Prometheus exposition by default', async () => {
@@ -48,8 +44,8 @@ describe('Metri', () => {
       url: '/metrics'
     });
 
-    expect(res.statusCode).to.equal(200);
-    expect(res.payload).to.match(/nodejs_versions{node=".+"} 1/);
+    Assert.strictEqual(res.statusCode, 200);
+    Assert(/nodejs_versions{node=".+"} 1/.test(res.payload));
   });
 
   it('configures JSON as the default response type', async () => {
@@ -59,14 +55,14 @@ describe('Metri', () => {
       url: '/metrics'
     });
 
-    expect(res.statusCode).to.equal(200);
+    Assert.strictEqual(res.statusCode, 200);
     const metrics = JSON.parse(res.payload);
-    expect(metrics.process).to.be.an.object();
-    expect(metrics.system).to.be.an.object();
-    expect(metrics.cpu).to.be.an.array();
-    expect(metrics.loop).to.be.a.number();
-    expect(metrics.handles).to.be.a.number();
-    expect(metrics.requests).to.be.a.number();
+    Assert(metrics.process !== null && typeof metrics.process === 'object');
+    Assert(metrics.system !== null && typeof metrics.system === 'object');
+    Assert(Array.isArray(metrics.cpu));
+    Assert(typeof metrics.loop === 'number');
+    Assert(typeof metrics.handles === 'number');
+    Assert(typeof metrics.requests === 'number');
   });
 
   it('configures the JSON MIME type', async () => {
@@ -77,14 +73,14 @@ describe('Metri', () => {
       headers: { 'Accept': 'application/foo' }
     });
 
-    expect(res.statusCode).to.equal(200);
+    Assert.strictEqual(res.statusCode, 200);
     const metrics = JSON.parse(res.payload);
-    expect(metrics.process).to.be.an.object();
-    expect(metrics.system).to.be.an.object();
-    expect(metrics.cpu).to.be.an.array();
-    expect(metrics.loop).to.be.a.number();
-    expect(metrics.handles).to.be.a.number();
-    expect(metrics.requests).to.be.a.number();
+    Assert(metrics.process !== null && typeof metrics.process === 'object');
+    Assert(metrics.system !== null && typeof metrics.system === 'object');
+    Assert(Array.isArray(metrics.cpu));
+    Assert(typeof metrics.loop === 'number');
+    Assert(typeof metrics.handles === 'number');
+    Assert(typeof metrics.requests === 'number');
   });
 
   it('configures the exposition MIME type', async () => {
@@ -98,8 +94,8 @@ describe('Metri', () => {
       headers: { 'Accept': 'application/foo' }
     });
 
-    expect(res.statusCode).to.equal(200);
-    expect(res.payload).to.match(/# HELP nodejs_event_loop_delay Delay of the Node\.js event loop/);
+    Assert.strictEqual(res.statusCode, 200);
+    Assert(/# HELP nodejs_event_loop_delay Delay of the Node\.js event loop/.test(res.payload));
   });
 
   it('throws if the default format is not valid', async () => {
@@ -109,10 +105,11 @@ describe('Metri', () => {
       await getServer({ defaultFormat: 'foo' });
     } catch (err) {
       threw = true;
-      expect(err).to.be.an.error(Error, 'defaultFormat must be exposition or json');
+      Assert(err instanceof Error);
+      Assert.strictEqual(err.message, 'defaultFormat must be exposition or json');
     }
 
-    expect(threw).to.be.true();
+    Assert.strictEqual(threw, true);
   });
 
   it('reports response timings in exposition format', async () => {
@@ -123,14 +120,14 @@ describe('Metri', () => {
       method: 'GET',
       url: '/foo'
     });
-    expect(res.payload).to.equal('ok');
-    expect(res.statusCode).to.equal(200);
+    Assert.strictEqual(res.payload, 'ok');
+    Assert.strictEqual(res.statusCode, 200);
 
     res = await server.inject({
       method: 'GET',
       url: '/bar'
     });
-    expect(res.statusCode).to.equal(500);
+    Assert.strictEqual(res.statusCode, 500);
 
     res = await server.inject({
       method: 'GET',
@@ -138,9 +135,9 @@ describe('Metri', () => {
       headers: { 'Accept': 'text/plain' }
     });
 
-    expect(res.statusCode).to.equal(200);
-    expect(res.payload).to.include('http_request_duration_ms_count{method="get",path="/foo",code="200"} 1');
-    expect(res.payload).to.include('http_request_duration_ms_count{method="get",path="/bar",code="500"} 1');
+    Assert.strictEqual(res.statusCode, 200);
+    Assert(res.payload.includes('http_request_duration_ms_count{method="get",path="/foo",code="200"} 1'));
+    Assert(res.payload.includes('http_request_duration_ms_count{method="get",path="/bar",code="500"} 1'));
   });
 });
 

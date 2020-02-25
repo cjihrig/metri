@@ -11,7 +11,7 @@ hapi plugin for returning Node.js process metrics.
 
 ```javascript
 'use strict';
-const Hapi = require('hapi');
+const Hapi = require('@hapi/hapi');
 const Metri = require('metri');
 const server = Hapi.server();
 
