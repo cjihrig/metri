@@ -139,6 +139,58 @@ describe('Metri', () => {
     Assert(res.payload.includes('http_request_duration_ms_count{method="get",path="/foo",code="200"} 1'));
     Assert(res.payload.includes('http_request_duration_ms_count{method="get",path="/bar",code="500"} 1'));
   });
+
+  it('rewrites paths based on formatPaths() option', async () => {
+    let called = false;
+    const server = await getServer({
+      formatPaths (request) {
+        called = true;
+        return '/not-the-real-path';
+      }
+    });
+    let res = await server.inject({
+      method: 'GET',
+      url: '/foo'
+    });
+    Assert.strictEqual(called, true);
+    Assert.strictEqual(res.payload, 'ok');
+    Assert.strictEqual(res.statusCode, 200);
+
+    res = await server.inject({
+      method: 'GET',
+      url: '/metrics',
+      headers: { 'Accept': 'text/plain' }
+    });
+
+    Assert.strictEqual(res.statusCode, 200);
+    Assert(res.payload.includes('http_request_duration_ms_count{method="get",path="/not-the-real-path",code="200"} 1'));
+  });
+
+  it('ignores paths based on formatPaths() option', async () => {
+    let called = false;
+    const server = await getServer({
+      formatPaths (request) {
+        called = true;
+        // Do not return a string value here.
+      }
+    });
+    let res = await server.inject({
+      method: 'GET',
+      url: '/foo'
+    });
+    Assert.strictEqual(called, true);
+    Assert.strictEqual(res.payload, 'ok');
+    Assert.strictEqual(res.statusCode, 200);
+
+    res = await server.inject({
+      method: 'GET',
+      url: '/metrics',
+      headers: { 'Accept': 'text/plain' }
+    });
+
+    Assert.strictEqual(res.statusCode, 200);
+    Assert(!res.payload.includes('http_request_duration_ms_count{method="get",path="/foo",code="200"} 1'));
+  });
 });
 
 

@@ -31,6 +31,10 @@ An optional string that defaults to `'/metrics'`. This is the path that serves t
 
 The hapi authentication to apply to the metrics route. Defaults to `false` (no authentication).
 
+### `formatPaths(request)`
+
+`metri` tracks request response times via a histogram. By default, times are tracked by HTTP method, path, and response status code (`GET /foo 200` for example). By default, the path is obtained via hapi's `request.path`. However, for use cases such as GraphQL, `request.path` may not be the ideal way to identify requests. `formatPaths()` is an optional function that takes the hapi request object as an input, and returns the path to be used by the response timing histogram. If `formatPaths()` returns a non-string value, the response is not recorded in the histogram. This is useful for ignoring routes, such as `/health`.
+
 ### `defaultFormat`
 
 The default response type. Valid values are `'json'` and `'exposition'`. Defaults to `'exposition'`.
