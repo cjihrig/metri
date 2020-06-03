@@ -2,6 +2,7 @@
 const Assert = require('assert');
 const Hapi = require('@hapi/hapi');
 const Lab = require('@hapi/lab');
+const Prometheus = require('prom-dress');
 const Metri = require('../lib');
 const { describe, it } = exports.lab = Lab.script();
 
@@ -190,6 +191,59 @@ describe('Metri', () => {
 
     Assert.strictEqual(res.statusCode, 200);
     Assert(!res.payload.includes('http_request_duration_ms_count{method="get",path="/foo",code="200"} 1'));
+  });
+
+  it('supports custom prometheus reporting', async () => {
+    const server = await getServer({
+      setupCollectors (registries, procMetrics) {
+        const foo = new Prometheus.Counter({
+          name: 'foo_metric',
+          help: 'Foo metric info.',
+          registries
+        });
+
+        return {
+          metrics () {
+            foo.inc();
+            return registries.map((registry) => {
+              return registry.report();
+            });
+          }
+        };
+      }
+    });
+
+    let res = await server.inject({
+      method: 'GET',
+      url: '/metrics',
+      headers: { 'Accept': 'text/plain' }
+    });
+
+    Assert.strictEqual(res.statusCode, 200);
+    Assert(!res.payload.includes('# HELP foo_metric Foo metric info.\n# TYPE foo_metric counter\nfoo_metric 1'));
+
+    res = await server.inject({
+      method: 'GET',
+      url: '/metrics',
+      headers: { 'Accept': 'text/plain' }
+    });
+
+    Assert.strictEqual(res.statusCode, 200);
+    Assert(!res.payload.includes('# HELP foo_metric Foo metric info.\n# TYPE foo_metric counter\nfoo_metric 2'));
+  });
+
+  it('throws if setupCollectors() is not a function', async () => {
+    let threw = false;
+
+    try {
+      await getServer({ setupCollectors: 'foo' });
+    } catch (err) {
+      threw = true;
+      Assert(err instanceof TypeError);
+      Assert.strictEqual(err.message, 'setupCollectors must be a function');
+    }
+
+    Assert.strictEqual(threw, true);
   });
 });
 
